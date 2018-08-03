@@ -7,20 +7,26 @@
 
 - name: Check for conjur.tar
   stat:
-     path: ../conjur.tar
+     path: ../conjur.{{item}}
+  with_items:
+    - "tar"
+    - "tar.gz"
+    - "tgz"
   register: conjurTar
 
-- name: Set varilables
+- name: Inform about Enterprise availability
   set_fact:
     conjur_version: 'EE'
   when: conjurTar.stat.exists == True
-  
+
 - name: Load Conjur tar
   docker_image:
     name: conjur-appliance
-    load_path: ../conjur.tar
+    load_path: item.stat.path
     state: present
     timeout: 120
+    when: item.stat.exists == True
+  with_items: conjurTar
   when: (conjurRegistry.stdout.find('registry2.itci.conjur.net') == -1) and (conjurTar.stat.exists == True)
 
 - include_tasks: conjurCLI.yml
